@@ -287,10 +287,3 @@ def like_post(id):
     post.like_count += 1
     db.session.commit()
     return jsonify({'like_count': post.like_count})
-
-from . import create_app
-
-app = create_app()
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
