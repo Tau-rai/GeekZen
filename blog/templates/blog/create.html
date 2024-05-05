@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-    <div class="max-w-lg mx-auto p-6 bg-white rounded shadow-md">
+    <div class="max-w-8/10 max-h-85 mx-auto p-6 bg-white rounded shadow-md border">
         <form method="post" class="space-y-4" enctype="multipart/form-data">
             <div>
                 <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
@@ -17,10 +17,10 @@
             </div> 
             <div>
                 <label for="body" class="block text-sm font-medium text-gray-700">Body</label>
-                <textarea name="body" id="body" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:border-blue-300 resize-y" rows="4">{{ request.form['body'] }}</textarea>
+                <textarea name="body" id="body" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:border-blue-300 resize-y" rows="8">{{ request.form['body'] }}</textarea>
             </div>
-            <div>
-                <label for="tags" class="block text-sm font-medium text-gray-700">Categories</label>
+            <div class="w-1/3">
+                <label for="tags" class="block text-sm font-medium text-gray-700">Topic</label>
                 <select name="tags" id="tags" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:border-blue-300">
                     {% for tag in tags %}
                         <option value="{{ tag }}">{{ tag }}</option>
@@ -36,5 +36,5 @@
                 <input type="submit" name="action" value="Save as Draft" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded cursor-pointer" />
             </div>
         </form>
-    </div>
+    </div>    
 {% endblock %}

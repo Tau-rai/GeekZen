@@ -35,9 +35,13 @@ $(document).ready(function() {
             contentType: false, // Important for file upload
             success: function(response) {
                 // Handle successful response (e.g., show success message)
-                console.log('Profile updated successfully!');
-                // Refresh the page after successful submission
-                location.reload();
+                if (response.success) {
+                    console.log('Profile updated successfully!');
+                    // Refresh the page after successful submission
+                    location.reload();
+                } else {
+                    console.error('Error updating profile:', response.error);
+                }
             },
             error: function(xhr, status, error) {
                 // Handle error response (e.g., show error message)
@@ -49,3 +53,4 @@ $(document).ready(function() {
         $('#edit-profile-form').addClass('hidden');
     });
 });
+

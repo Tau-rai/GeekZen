@@ -37,7 +37,7 @@ class Post(db.Model):
     tags = db.relationship('Tag', secondary='post_tags', backref=db.backref('posts', lazy=True))
 
     def __repr__(self):
-        return f'<Post {self.title}>'
+        return f'{self.title}'
 
 class Comment(db.Model):
     __tablename__ = 'comments'
@@ -49,7 +49,7 @@ class Comment(db.Model):
     created = db.Column(db.DateTime, nullable=False, default=func.now())
 
     def __repr__(self):
-        return f'<Comment {self.id}>'
+        return f'{self.id}'
 
 class Tag(db.Model):
     __tablename__ = 'tags'
@@ -58,7 +58,7 @@ class Tag(db.Model):
     name = db.Column(db.String(256), unique=True, nullable=False)
 
     def __repr__(self):
-        return f'<Tag {self.name}>'
+        return f'{self.name}'
 
 class PostTag(db.Model):
     __tablename__ = 'post_tags'
@@ -67,4 +67,4 @@ class PostTag(db.Model):
     tag_id = db.Column(db.Integer, db.ForeignKey('tags.id', ondelete='CASCADE'), primary_key=True)
 
     def __repr__(self):
-        return f'<PostTag {self.post_id}, {self.tag_id}>'
+        return f'{self.post_id}, {self.tag_id}'

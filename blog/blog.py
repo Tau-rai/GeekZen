@@ -62,7 +62,7 @@ def create():
 
             if image:
                 filename = secure_filename(image.filename)
-                image.save(os.path.join('/home/tau_rai/try/blogA/static/public/', filename))
+                image.save(os.path.join('/home/tau_rai/GeekZen/blog/static/public', filename))
                 post.image = 'public/' + filename
 
             if selected_tags:
@@ -70,9 +70,14 @@ def create():
                     tag = Tag.query.filter_by(name=tag_name).first()
                     if tag:
                         post_tag = PostTag(post_id=post.id, tag_id=tag.id)
-                        print(post_tag)
-                        db.session.add(post_tag)
-                        db.session.commit()
+                    else:  # If the tag doesn't exist, create a new one
+                        tag = Tag(name=tag_name)
+                        db.session.add(tag)
+                        db.session.commit()  # Commit the new tag creation
+
+                    post_tag = PostTag(post_id=post.id, tag_id=tag.id)  # Create the post_tag association
+                    db.session.add(post_tag)  # Add the association to the session
+                db.session.commit()  # Commit the post_tag associations
 
             # if new_tag_name:  # Check if 'newTag' field is not empty
             #     existing_tag = Tag.query.filter_by(name=new_tag_name).first()
@@ -116,7 +121,7 @@ def update(id):
         else:
             if image:
                 filename = secure_filename(image.filename)
-                image.save(os.path.join('/home/tau_rai/try/blogA/static/public/', filename))
+                image.save(os.path.join('/home/tau_rai/GeekZen/blog/static/public/', filename))
                 post.image = 'public/' + filename
             post.title = title
             post.body = body
@@ -217,47 +222,49 @@ def search():
 # Regular expression for validating an Email
 email_regex = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
 
-@bp.route('/profile', methods=['GET', 'POST'])
+@bp.route('/profile')
 @login_required
 def profile():
-    """Updates user profile"""
-    user = g.user  # Fetch the current logged-in user object
-    posts = Post.query.filter_by(author_id=user.id, status='published').all()  # Fetch user's published posts
-    drafts = Post.query.filter_by(author_id=user.id, status='draft').all()  # Fetch user's draft posts
-
-    if request.method == 'POST':
-        # Fetch form data
-        user.first_name = request.form.get('first_name')
-        user.last_name = request.form.get('last_name')
-        user.date_of_birth = request.form.get('date_of_birth')
-        user.bio = request.form.get('bio')
-        user.email = request.form.get('email')
-
-        # Fetch profile picture
-        avatar = request.files.get('avatar')
-        if avatar:
-            filename = secure_filename(avatar.filename)
-            avatar.save(os.path.join('/home/tau_rai/try/blogA/static/public', filename))
-            user.avatar = 'public/' + filename  # Update the user's avatar path
-
-        # Validate email format
-        if not re.fullmatch(email_regex, user.email):
-            flash('Invalid email address.')
-        else:
-            # Check if email already exists in the database
-            existing_user = User.query.filter(User.email == user.email, User.id != user.id).first()
-            if existing_user:
-                flash('Email address already in use.')
-            else:
-                try:
-                    # Update user details in the database
-                    db.session.commit()
-                    flash('Profile updated successfully!')
-                except Exception as e:
-                    db.session.rollback()
-                    flash('An error occurred while updating the profile.')
-
+    """Shows user profile"""
+    user = g.user 
+    posts = Post.query.filter_by(author_id=user.id, status='published').all() 
+    drafts = Post.query.filter_by(author_id=user.id, status='draft').all() 
     return render_template('blog/profile.html', user=user, posts=posts, drafts=drafts)
+
+@bp.route('/update_profile', methods=['POST'])
+@login_required
+def update_profile():
+    """Updates user profile"""
+    user = g.user 
+
+    user.first_name = request.form.get('first_name')
+    user.last_name = request.form.get('last_name')
+    user.date_of_birth = request.form.get('date_of_birth')
+    user.bio = request.form.get('bio')
+
+    avatar = request.files.get('avatar')
+    if avatar:
+        filename = secure_filename(avatar.filename)
+        avatar.save(os.path.join('/home/tau_rai/GeekZen/blog/static/public/', filename))
+        user.avatar = 'public/' + filename 
+
+    if user.email and isinstance(user.email, str) and not re.fullmatch(email_regex, user.email):
+        flash('Invalid email address.')
+    else:
+        existing_user = User.query.filter(User.email == user.email, User.id != user.id).first()
+        if existing_user:
+            flash('Email address already in use.')
+        else:
+            try:
+                db.session.commit()
+                flash('Profile updated successfully!')
+            except Exception as e:
+                db.session.rollback()
+                flash('An error occurred while updating the profile.')
+            finally:
+                user = User.query.get(g.user.id)
+
+    return redirect(url_for('blog.profile'))
 
 
 @bp.route('/privacy-policy')
