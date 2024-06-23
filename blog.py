@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import func, or_
 from werkzeug.utils import secure_filename
-from .auth import login_required
+from flask_login import current_user, login_required
 from .dbase import db
 from .models import Comment, Post, PostTag, Tag, User
 
@@ -79,14 +79,14 @@ def create():
             # Flash the error message
             flash(error)
         else:
-            if g.user is None:
+            if current_user is None:
                 # Flash an error message
                 flash('You need to be logged in to create a post.')
                 return redirect(url_for('auth.login'))
 
             # Create a new post
             status = 'published' if action == 'Publish' else 'draft'
-            post = Post(title=title, body=body, author_id=g.user.id, status=status)
+            post = Post(title=title, body=body, author_id=current_user.id, status=status)
             db.session.add(post)
             db.session.commit()
 
@@ -331,7 +331,7 @@ def comment(id):
             error = 'Comment body is required.'
 
         # Check if user is logged in
-        if g.user is None:
+        if current_user is None:
             error = 'You must be logged in to add a comment.'
 
         # Handle validation error
@@ -339,7 +339,7 @@ def comment(id):
             flash(error, 'error')
         else:
             # Create a new Comment object
-            comment = Comment(post_id=id, body=body, author_id=g.user.id)
+            comment = Comment(post_id=id, body=body, author_id=current_user.id)
 
             # Add the new comment to the session
             db.session.add(comment)
@@ -383,7 +383,7 @@ def profile():
         flask.Response: The rendered profile.html template.
     """
     # Get the current user object
-    user = g.user 
+    user = current_user
 
     # Query the database for all published posts and drafts written by the user
     posts = Post.query.filter_by(author_id=user.id, status='published').all() 
@@ -410,7 +410,7 @@ def update_profile():
         flask.redirect: Redirects the user to the profile page.
     """
     # Get the current user object
-    user = g.user 
+    user = current_user 
 
     # Update user fields with data from the form
     user.first_name = request.form.get('first_name')
@@ -443,7 +443,7 @@ def update_profile():
                 flash('An error occurred while updating the profile.')
             finally:
                 # Refresh the user object with the latest data from the database
-                user = User.query.get(g.user.id)
+                user = User.query.get(current_user.id)
 
     # Redirect the user to their profile page
     return redirect(url_for('blog.profile'))

@@ -4,8 +4,10 @@ import re
 import os
 from .dbase import db
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
-from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify
+from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for, jsonify, current_app as app
 from flask_mail import Message
+from flask_login import login_user, logout_user, login_required, current_user
+from . import login_manager
 from . import mail
 from .models import User
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -22,7 +24,7 @@ def signup():
 
     If the request method is POST, it handles the form submission.
     It checks if the username, email, and password are provided.
-    It also validates the email format.
+    It also validates the email format
     If the passwords do not match, it sets an error message.
     If no error occurs, it checks if the username or email already exist in the database.
     If not, it creates a new user object and adds it to the database.
@@ -72,17 +74,7 @@ def signup():
 
 @bp.route('/login', methods=('GET', 'POST'))
 def login():
-    """
-    Logs in the user.
-
-    If the request method is POST, it handles the form submission.
-    It checks if the email and password are provided.
-    If the user exists and the password is correct, it clears the session,
-    sets the user id in the session, and redirects to the blog index page.
-    If the user does not exist or the password is incorrect, it sets an error message.
-
-    If the request method is GET, it renders the login.html template.
-    """
+    """Logs in the user."""
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
@@ -95,16 +87,14 @@ def login():
                 user = User.query.filter_by(email=email).first()
             except Exception as e:
                 error = 'Database error occurred.'
-                # Log the error `e` here
-
+                
             if user is None:
                 error = 'Incorrect email or password.'
             elif not check_password_hash(user.password, password):
                 error = 'Incorrect email or password.'
 
         if error is None:
-            session.clear()
-            session['user_id'] = user.id
+            login_user(user)
             return redirect(url_for('blog.index'))
         else:
             flash(error)
@@ -205,61 +195,13 @@ def reset_password(token):
         # Return a success message
         return jsonify({'message': 'Password has been reset successfully, please login.'}), 200
 
-@bp.before_app_request
-def load_logged_in_user():
-    """
-    Load the user from the database before each request.
-
-    This function is registered as a before_app_request hook in the auth blueprint.
-    It checks if the user_id is present in the session. If it is, it queries the database
-    to get the corresponding user object and stores it in the g (app global) object.
-    If the user_id is not present, it sets g.user to None.
-
-    This function is necessary to make the currently logged in user accessible in templates.
-    """
-    # Get the user_id from the session
-    user_id = session.get('user_id')
-
-    if user_id is None:
-        # If user_id is not present, set g.user to None
-        g.user = None
-    else:
-        # If user_id is present, query the database to get the user object
-        g.user = User.query.get(user_id)
-
-def login_required(view):
-    """
-    Decorator for views that require the user to be logged in.
-
-    Args:
-        view (function): The view function to be wrapped.
-
-    Returns:
-        function: The wrapped view function.
-    """
-    @functools.wraps(view)
-    def wrapped_view(**kwargs):
-        """
-        Wrapped view function that checks if the user is logged in.
-
-        If the user is not logged in, it redirects to the login page.
-        Otherwise, it calls the original view function.
-
-        Args:
-            **kwargs: Keyword arguments passed to the view function.
-
-        Returns:
-            The return value of the original view function.
-        """
-        if g.user is None:
-            return redirect(url_for('auth.login'))
-
-        return view(**kwargs)
-
-    return wrapped_view
-
+@login_manager.user_loader
+def load_user(user_id):
+    """Loads the user object from the database."""
+    return User.query.get(int(user_id))
 
 @bp.route('/logout')
+@login_required
 def logout():
     """
     Logs the user out by clearing the session and redirecting to the blog index page.
@@ -268,7 +210,7 @@ def logout():
         redirect: Redirects to the blog index page.
     """
     # Clear the session to log the user out
-    session.clear()
+    logout_user()
     
     # Redirect to the blog index page
     return redirect(url_for('blog.index'))

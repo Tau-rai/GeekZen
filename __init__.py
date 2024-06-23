@@ -5,6 +5,7 @@ from flask import Flask, g
 from .config import Config
 from flask.cli import with_appcontext
 from flask_mail import Mail
+from flask_login import LoginManager
 from markupsafe import Markup
 import logging
 from logging.handlers import RotatingFileHandler
@@ -20,7 +21,7 @@ def nl2br(value):
     return Markup(value.replace('\n', '<br>\n'))
 
 def get_db():
-    """Initializes a database connection"""
+    """Initializes a database connection."""
     if 'db' not in g:
         g.db = db
     return g.db
@@ -43,6 +44,9 @@ def init_db_command():
     init_db()
     click.echo('Initialized the database.')
 
+# Initialize the login manager 
+login_manager = LoginManager()
+
 def create_app():
     """Create and configure the Flask application.
 
@@ -51,6 +55,8 @@ def create_app():
     """
     # Create and configure the Flask application
     app = Flask(__name__, instance_relative_config=True)
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'  # The name of the view to redirect to when the user needs to log in.
 
     # Load the default configuration
     app.config.from_object(Config)

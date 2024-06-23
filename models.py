@@ -1,9 +1,10 @@
 """This module defines the models for the application"""
 from .dbase import db
 from sqlalchemy.sql import func
+from flask_login import UserMixin
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     """Defines the user class"""
     __tablename__ = 'users'
 
@@ -74,4 +75,4 @@ class PostTag(db.Model):
     tag_id = db.Column(db.Integer, db.ForeignKey('tags.id', ondelete='CASCADE'), primary_key=True)
 
     def __repr__(self):
-        return f'<PostTag {self.post_id}, {self.tag_id}>'
+        return f'{self.post_id}, {self.tag_id}'
